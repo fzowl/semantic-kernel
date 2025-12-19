@@ -44,6 +44,22 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
     }
 
     [Fact]
+    public void Constructor_WithVoyageMultimodal35_CreatesInstance()
+    {
+        // Arrange & Act
+        var service = new VoyageAIMultimodalEmbeddingGenerationService(
+            modelId: "voyage-multimodal-3.5",
+            apiKey: "test-api-key",
+            httpClient: this._httpClient
+        );
+
+        // Assert
+        service.Should().NotBeNull();
+        service.Attributes.Should().ContainKey("ModelId");
+        service.Attributes["ModelId"].Should().Be("voyage-multimodal-3.5");
+    }
+
+    [Fact]
     public void Constructor_WithNullModelId_ThrowsArgumentNullException()
     {
         // Act & Assert
@@ -324,6 +340,42 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
 
         // Assert
         service.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task GenerateMultimodalEmbeddingsAsync_WithVoyageMultimodal35_SendsCorrectModel()
+    {
+        // Arrange
+        var responseContent = JsonSerializer.Serialize(new
+        {
+            data = new[]
+            {
+                new { embedding = new[] { 0.1f, 0.2f, 0.3f, 0.4f }, index = 0, @object = "embedding" }
+            },
+            usage = new { total_tokens = 5 }
+        });
+
+        this._messageHandlerStub.ResponseToReturn = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(responseContent)
+        };
+
+        var service = new VoyageAIMultimodalEmbeddingGenerationService(
+            modelId: "voyage-multimodal-3.5",
+            apiKey: "test-api-key",
+            httpClient: this._httpClient
+        );
+
+        var inputs = new List<object> { "test text for multimodal 3.5" };
+
+        // Act
+        var result = await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().HaveCount(1);
+        this._messageHandlerStub.RequestContent.Should().NotBeNull();
+        this._messageHandlerStub.RequestContent.Should().Contain("voyage-multimodal-3.5");
     }
 
     public void Dispose()

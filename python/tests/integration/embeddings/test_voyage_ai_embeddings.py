@@ -59,3 +59,29 @@ async def test_voyage_ai_code_embeddings():
     assert embeddings is not None
     assert len(embeddings) == 2
     print(f"Generated code embeddings with dimension: {len(embeddings[0])}")
+
+
+@pytest.mark.asyncio
+async def test_voyage_ai_multimodal_3_5_embeddings():
+    """Test VoyageAI multimodal 3.5 embeddings (preview model with video support)."""
+    from semantic_kernel.connectors.ai.voyage_ai import VoyageAIMultimodalEmbedding
+
+    api_key = os.getenv("VOYAGE_AI_API_KEY")
+    assert api_key, "VOYAGE_AI_API_KEY environment variable must be set"
+
+    service = VoyageAIMultimodalEmbedding(
+        ai_model_id="voyage-multimodal-3.5",
+        api_key=api_key,
+    )
+
+    texts = [
+        "A photo of a cat sitting on a windowsill",
+        "A diagram showing neural network architecture",
+    ]
+
+    embeddings = await service.generate_embeddings(texts)
+
+    assert embeddings is not None
+    assert len(embeddings) == 2
+    assert len(embeddings[0]) == 1024  # Default dimension
+    print(f"Generated voyage-multimodal-3.5 embeddings with dimension: {len(embeddings[0])}")

@@ -98,7 +98,7 @@ public static class VoyageAIServiceCollectionExtensions
     /// Adds the VoyageAI multimodal embedding generation service to the <see cref="IServiceCollection"/>.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> instance to augment.</param>
-    /// <param name="modelId">The VoyageAI model ID (e.g., "voyage-multimodal-3").</param>
+    /// <param name="modelId">The VoyageAI model ID (e.g., "voyage-multimodal-3", "voyage-multimodal-3.5").</param>
     /// <param name="apiKey">The VoyageAI API key.</param>
     /// <param name="endpoint">Optional API endpoint. Defaults to https://api.voyageai.com/v1.</param>
     /// <param name="serviceId">A local identifier for the given AI service.</param>

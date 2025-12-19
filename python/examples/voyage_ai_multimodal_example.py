@@ -16,8 +16,11 @@ async def main():
         raise ValueError("Please set the VOYAGE_AI_API_KEY environment variable")
 
     # Create multimodal embedding service
+    # Available models:
+    #   - voyage-multimodal-3.5 (Preview): Latest model with text, image, and video support
+    #   - voyage-multimodal-3: Text and image embeddings
     embedding_service = VoyageAIMultimodalEmbedding(
-        ai_model_id="voyage-multimodal-3",
+        ai_model_id="voyage-multimodal-3.5",  # Use latest model
         api_key=api_key,
     )
 

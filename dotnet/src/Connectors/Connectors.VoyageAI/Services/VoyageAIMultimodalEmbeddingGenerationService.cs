@@ -11,7 +11,8 @@ namespace Microsoft.SemanticKernel.Connectors.VoyageAI;
 /// <summary>
 /// VoyageAI multimodal embedding generation service.
 /// Generates embeddings for text, images, or interleaved text and images.
-/// Supports the voyage-multimodal-3 model.
+/// Supports voyage-multimodal-3 and voyage-multimodal-3.5 (Preview) models.
+/// The voyage-multimodal-3.5 model adds video support in addition to text and images.
 /// </summary>
 /// <remarks>
 /// Constraints:
@@ -30,7 +31,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationService : ITextEmbeddin
     /// <summary>
     /// Initializes a new instance of the <see cref="VoyageAIMultimodalEmbeddingGenerationService"/> class.
     /// </summary>
-    /// <param name="modelId">The VoyageAI model ID (e.g., voyage-multimodal-3).</param>
+    /// <param name="modelId">The VoyageAI model ID (e.g., "voyage-multimodal-3", "voyage-multimodal-3.5").</param>
     /// <param name="apiKey">The VoyageAI API key.</param>
     /// <param name="endpoint">Optional API endpoint (defaults to https://api.voyageai.com/v1).</param>
     /// <param name="httpClient">Optional HTTP client.</param>
