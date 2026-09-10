@@ -120,6 +120,8 @@
     <Project Path="src/Connectors/Connectors.Onnx/Connectors.Onnx.csproj" />
     <Project Path="src/Connectors/Connectors.OpenAI.UnitTests/Connectors.OpenAI.UnitTests.csproj" />
     <Project Path="src/Connectors/Connectors.OpenAI/Connectors.OpenAI.csproj" />
+    <Project Path="src/Connectors/Connectors.VoyageAI.UnitTests/Connectors.VoyageAI.UnitTests.csproj" />
+    <Project Path="src/Connectors/Connectors.VoyageAI/Connectors.VoyageAI.csproj" />
   </Folder>
   <Folder Name="/src/experimental/">
     <Project Path="src/Experimental/Orchestration.Flow.IntegrationTests/Experimental.Orchestration.Flow.IntegrationTests.csproj" />

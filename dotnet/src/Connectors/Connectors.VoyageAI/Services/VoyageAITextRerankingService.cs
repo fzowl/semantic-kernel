@@ -1,0 +1,111 @@
+﻿// Copyright (c) Microsoft. All rights reserved.
+
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Logging;
+using Microsoft.SemanticKernel.Connectors.VoyageAI.Core;
+using Microsoft.SemanticKernel.Reranking;
+using Microsoft.SemanticKernel.Services;
+
+namespace Microsoft.SemanticKernel.Connectors.VoyageAI;
+
+/// <summary>
+/// VoyageAI by MongoDB text reranking service.
+/// Supports current models such as rerank-2.5 and rerank-2.5-lite (preview: rerank-3, rerank-3-lite;
+/// legacy rerank-2, rerank-2-lite, rerank-1, rerank-lite-1 remain accessible).
+/// </summary>
+[Experimental("SKEXP0001")]
+public sealed class VoyageAITextRerankingService : ITextRerankingService
+{
+    private readonly VoyageAIClient _client;
+    private readonly string _modelId;
+    private readonly Dictionary<string, object?> _attributes = new();
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="VoyageAITextRerankingService"/> class.
+    /// </summary>
+    /// <param name="modelId">The VoyageAI by MongoDB reranker model ID (e.g., rerank-2.5).</param>
+    /// <param name="apiKey">The VoyageAI by MongoDB API key.</param>
+    /// <param name="endpoint">Optional API endpoint. When not set, it is derived from the API key:
+    /// keys starting with "al-" use https://ai.mongodb.com/v1, otherwise https://api.voyageai.com/v1.</param>
+    /// <param name="httpClient">Optional HTTP client.</param>
+    /// <param name="loggerFactory">Optional logger factory.</param>
+    public VoyageAITextRerankingService(
+        string modelId,
+        string apiKey,
+        string? endpoint = null,
+        HttpClient? httpClient = null,
+        ILoggerFactory? loggerFactory = null)
+    {
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(modelId);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(apiKey);
+
+        this._modelId = modelId;
+        this._client = new VoyageAIClient(
+            apiKey,
+            endpoint,
+            httpClient,
+            loggerFactory?.CreateLogger(typeof(VoyageAITextRerankingService)));
+
+        this._attributes.Add(AIServiceExtensions.ModelIdKey, modelId);
+    }
+
+    /// <inheritdoc/>
+    public IReadOnlyDictionary<string, object?> Attributes => this._attributes;
+
+    /// <inheritdoc/>
+    public Task<IList<RerankResult>> RerankAsync(
+        string query,
+        IList<string> documents,
+        Kernel? kernel = null,
+        CancellationToken cancellationToken = default)
+        => this.RerankAsync(query, documents, executionSettings: null, kernel, cancellationToken);
+
+    /// <summary>
+    /// Reranks a list of documents based on their relevance to a query, using the supplied settings.
+    /// </summary>
+    /// <param name="query">The query to rank documents against.</param>
+    /// <param name="documents">The list of documents to rerank.</param>
+    /// <param name="executionSettings">Optional execution settings. Use
+    /// <see cref="VoyageAIRerankPromptExecutionSettings"/> to control <c>top_k</c> and <c>truncation</c>.</param>
+    /// <param name="kernel">The <see cref="Kernel"/> containing services, plugins, and other state.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
+    /// <returns>A list of <see cref="RerankResult"/> sorted by relevance score in descending order.</returns>
+    public async Task<IList<RerankResult>> RerankAsync(
+        string query,
+        IList<string> documents,
+        PromptExecutionSettings? executionSettings,
+        Kernel? kernel = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(documents);
+
+        var settings = VoyageAIRerankPromptExecutionSettings.FromExecutionSettings(executionSettings)
+            ?? new VoyageAIRerankPromptExecutionSettings();
+
+        var request = new RerankRequest
+        {
+            Query = query,
+            Documents = documents,
+            Model = this._modelId,
+            TopK = settings.TopK,
+            Truncation = settings.Truncation
+        };
+
+        var response = await this._client.SendRequestAsync<RerankResponse>(
+            "rerank",
+            request,
+            cancellationToken).ConfigureAwait(false);
+
+        // Create a map from index to document for lookup
+        var documentMap = documents.Select((doc, index) => new { index, doc })
+            .ToDictionary(x => x.index, x => x.doc);
+
+        var results = response.Data
+            .Where(r => documentMap.ContainsKey(r.Index))  // Validate index exists
+            .OrderByDescending(r => r.RelevanceScore)
+            .Select(r => new RerankResult(r.Index, documentMap[r.Index], r.RelevanceScore))
+            .ToList();
+
+        return results;
+    }
+}
