@@ -154,6 +154,11 @@ usearch = [
     "usearch >= 2.16,< 2.25",
     "pyarrow>=12.0,<26.0"
 ]
+voyageai = [
+    # The official client's get_default_base_url routes "al-" prefixed API keys to the
+    # MongoDB endpoint (https://ai.mongodb.com/v1) and all others to VoyageAI.
+    "voyageai >= 0.3.2"
+]
 weaviate = [
     "weaviate-client>=4.17.0,<5.0",
 ]
