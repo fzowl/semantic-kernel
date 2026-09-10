@@ -8,7 +8,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.SemanticKernel.Connectors.VoyageAI;
 using Xunit;
 
 namespace Microsoft.SemanticKernel.Connectors.VoyageAI.UnitTests.Services;
@@ -68,7 +67,7 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
     }
 
     [Fact]
-    public async Task GenerateContextualizedEmbeddingsAsync_ReturnsEmbeddings()
+    public async Task GenerateContextualizedEmbeddingsReturnsEmbeddingsAsync()
     {
         // Arrange
         var expectedEmbeddings = new List<float[]>
@@ -110,7 +109,7 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
         };
 
         // Act
-        var result = await service.GenerateContextualizedEmbeddingsAsync(inputs).ConfigureAwait(false);
+        var result = await service.GenerateContextualizedEmbeddingsAsync(inputs);
 
         // Assert
         result.Should().NotBeNull();
@@ -120,7 +119,7 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
     }
 
     [Fact]
-    public async Task GenerateContextualizedEmbeddingsAsync_SendsCorrectRequest()
+    public async Task GenerateContextualizedEmbeddingsSendsCorrectRequestAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -155,7 +154,7 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
         };
 
         // Act
-        await service.GenerateContextualizedEmbeddingsAsync(inputs).ConfigureAwait(false);
+        await service.GenerateContextualizedEmbeddingsAsync(inputs);
 
         // Assert
         this._messageHandlerStub.RequestContent.Should().NotBeNull();
@@ -165,7 +164,7 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
     }
 
     [Fact]
-    public async Task GenerateContextualizedEmbeddingsAsync_AppliesInputTypeAndOmitsTruncation()
+    public async Task GenerateContextualizedEmbeddingsAppliesInputTypeAndOmitsTruncationAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -198,7 +197,7 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
         var settings = new VoyageAIContextualizedEmbeddingPromptExecutionSettings { InputType = "query" };
 
         // Act
-        await service.GenerateContextualizedEmbeddingsAsync(inputs, settings).ConfigureAwait(false);
+        await service.GenerateContextualizedEmbeddingsAsync(inputs, settings);
 
         // Assert
         using var doc = JsonDocument.Parse(this._messageHandlerStub.RequestContent!);
@@ -209,7 +208,7 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
     }
 
     [Fact]
-    public async Task GenerateContextualizedEmbeddingsAsync_SendsCorrectModel()
+    public async Task GenerateContextualizedEmbeddingsSendsCorrectModelAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -244,7 +243,7 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
         };
 
         // Act
-        var result = await service.GenerateContextualizedEmbeddingsAsync(inputs).ConfigureAwait(false);
+        var result = await service.GenerateContextualizedEmbeddingsAsync(inputs);
 
         // Assert
         result.Should().NotBeNull();
@@ -253,7 +252,7 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
     }
 
     [Fact]
-    public async Task GenerateContextualizedEmbeddingsAsync_HandlesApiError()
+    public async Task GenerateContextualizedEmbeddingsHandlesApiErrorAsync()
     {
         // Arrange
         this._messageHandlerStub.ResponseToReturn = new HttpResponseMessage(HttpStatusCode.BadRequest)
@@ -274,12 +273,11 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(
-            async () => await service.GenerateContextualizedEmbeddingsAsync(inputs).ConfigureAwait(false)
-        ).ConfigureAwait(false);
+            async () => await service.GenerateContextualizedEmbeddingsAsync(inputs));
     }
 
     [Fact]
-    public async Task GenerateEmbeddingsAsync_WrapsToContextualizedCall()
+    public async Task GenerateEmbeddingsWrapsToContextualizedCallAsync()
     {
         // Arrange
         var expectedEmbedding = new[] { 0.1f, 0.2f, 0.3f };
@@ -313,7 +311,7 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
         var data = new List<string> { "text1" };
 
         // Act
-        var result = await service.GenerateEmbeddingsAsync(data).ConfigureAwait(false);
+        var result = await service.GenerateEmbeddingsAsync(data);
 
         // Assert
         result.Should().NotBeNull();
@@ -372,7 +370,7 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
         {
             if (request.Content is not null)
             {
-                this.RequestContent = await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                this.RequestContent = await request.Content.ReadAsStringAsync(cancellationToken);
             }
 
             foreach (var header in request.Headers)

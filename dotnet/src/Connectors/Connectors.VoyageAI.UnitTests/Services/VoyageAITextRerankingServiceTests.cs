@@ -2,14 +2,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.SemanticKernel.Connectors.VoyageAI;
 using Microsoft.SemanticKernel.Reranking;
 using Xunit;
 
@@ -45,7 +43,7 @@ public sealed class VoyageAITextRerankingServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task RerankAsyncShouldReturnRankedResults()
+    public async Task RerankShouldReturnRankedResultsAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -74,7 +72,7 @@ public sealed class VoyageAITextRerankingServiceTests : IDisposable
         var documents = new List<string> { "doc1", "doc2", "doc3" };
 
         // Act
-        var results = await service.RerankAsync(query, documents).ConfigureAwait(false);
+        var results = await service.RerankAsync(query, documents);
 
         // Assert
         results.Should().NotBeNull();
@@ -86,7 +84,7 @@ public sealed class VoyageAITextRerankingServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task RerankAsyncShouldSendCorrectRequest()
+    public async Task RerankShouldSendCorrectRequestAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -110,7 +108,7 @@ public sealed class VoyageAITextRerankingServiceTests : IDisposable
         var documents = new List<string> { "Semantic Kernel is an SDK" };
 
         // Act
-        await service.RerankAsync(query, documents).ConfigureAwait(false);
+        await service.RerankAsync(query, documents);
 
         // Assert
         this._messageHandlerStub.RequestContent.Should().NotBeNull();
@@ -120,7 +118,7 @@ public sealed class VoyageAITextRerankingServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task RerankAsyncShouldApplyExecutionSettings()
+    public async Task RerankShouldApplyExecutionSettingsAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -147,7 +145,7 @@ public sealed class VoyageAITextRerankingServiceTests : IDisposable
         };
 
         // Act
-        await service.RerankAsync("What is SK?", new List<string> { "doc" }, settings).ConfigureAwait(false);
+        await service.RerankAsync("What is SK?", new List<string> { "doc" }, settings);
 
         // Assert
         using var doc = JsonDocument.Parse(this._messageHandlerStub.RequestContent!);
@@ -157,7 +155,7 @@ public sealed class VoyageAITextRerankingServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task RerankAsyncShouldHandleEmptyResults()
+    public async Task RerankShouldHandleEmptyResultsAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -181,7 +179,7 @@ public sealed class VoyageAITextRerankingServiceTests : IDisposable
         var documents = new List<string> { "doc" };
 
         // Act
-        var results = await service.RerankAsync(query, documents).ConfigureAwait(false);
+        var results = await service.RerankAsync(query, documents);
 
         // Assert
         results.Should().NotBeNull();
@@ -189,7 +187,7 @@ public sealed class VoyageAITextRerankingServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task RerankAsyncShouldHandleApiError()
+    public async Task RerankShouldHandleApiErrorAsync()
     {
         // Arrange
         this._messageHandlerStub.ResponseToReturn = new HttpResponseMessage(HttpStatusCode.InternalServerError)
@@ -208,8 +206,7 @@ public sealed class VoyageAITextRerankingServiceTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(
-            async () => await service.RerankAsync(query, documents).ConfigureAwait(false)
-        ).ConfigureAwait(false);
+            async () => await service.RerankAsync(query, documents));
     }
 
     public void Dispose()
@@ -230,7 +227,7 @@ public sealed class VoyageAITextRerankingServiceTests : IDisposable
         {
             if (request.Content is not null)
             {
-                this.RequestContent = await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                this.RequestContent = await request.Content.ReadAsStringAsync(cancellationToken);
             }
 
             foreach (var header in request.Headers)

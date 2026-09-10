@@ -8,7 +8,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.SemanticKernel.Connectors.VoyageAI;
 using Xunit;
 
 namespace Microsoft.SemanticKernel.Connectors.VoyageAI.UnitTests.Services;
@@ -84,7 +83,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
     }
 
     [Fact]
-    public async Task GenerateMultimodalEmbeddingsAsync_WithTextInputs_ReturnsEmbeddings()
+    public async Task GenerateMultimodalEmbeddingsWithTextInputsReturnsEmbeddingsAsync()
     {
         // Arrange
         var expectedEmbeddings = new List<float[]>
@@ -121,7 +120,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
         };
 
         // Act
-        var result = await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false);
+        var result = await service.GenerateMultimodalEmbeddingsAsync(inputs);
 
         // Assert
         result.Should().NotBeNull();
@@ -131,7 +130,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
     }
 
     [Fact]
-    public async Task GenerateMultimodalEmbeddingsAsync_WithMixedInputs_ReturnsEmbeddings()
+    public async Task GenerateMultimodalEmbeddingsWithMixedInputsReturnsEmbeddingsAsync()
     {
         // Arrange
         var expectedEmbeddings = new List<float[]>
@@ -171,7 +170,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
         };
 
         // Act
-        var result = await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false);
+        var result = await service.GenerateMultimodalEmbeddingsAsync(inputs);
 
         // Assert
         result.Should().NotBeNull();
@@ -181,7 +180,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
     }
 
     [Fact]
-    public async Task GenerateMultimodalEmbeddingsAsync_SendsStructuredContentPayload()
+    public async Task GenerateMultimodalEmbeddingsSendsStructuredContentPayloadAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -212,7 +211,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
         };
 
         // Act
-        await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false);
+        await service.GenerateMultimodalEmbeddingsAsync(inputs);
 
         // Assert - verify the official structured payload shape
         this._messageHandlerStub.RequestContent.Should().NotBeNull();
@@ -234,7 +233,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
     }
 
     [Fact]
-    public async Task GenerateMultimodalEmbeddingsAsync_AppliesExecutionSettings()
+    public async Task GenerateMultimodalEmbeddingsAppliesExecutionSettingsAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -264,7 +263,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
         };
 
         // Act
-        await service.GenerateEmbeddingsAsync(new List<string> { "hello" }, settings).ConfigureAwait(false);
+        await service.GenerateEmbeddingsAsync(new List<string> { "hello" }, settings);
 
         // Assert
         using var doc = JsonDocument.Parse(this._messageHandlerStub.RequestContent!);
@@ -274,7 +273,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
     }
 
     [Fact]
-    public async Task GenerateMultimodalEmbeddingsAsync_SendsCorrectRequest()
+    public async Task GenerateMultimodalEmbeddingsSendsCorrectRequestAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -300,7 +299,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
         var inputs = new List<VoyageAIMultimodalInput> { VoyageAIMultimodalInput.FromText("test text") };
 
         // Act
-        await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false);
+        await service.GenerateMultimodalEmbeddingsAsync(inputs);
 
         // Assert
         this._messageHandlerStub.RequestContent.Should().NotBeNull();
@@ -310,7 +309,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
     }
 
     [Fact]
-    public async Task GenerateMultimodalEmbeddingsAsync_SendsCorrectModel()
+    public async Task GenerateMultimodalEmbeddingsSendsCorrectModelAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -336,7 +335,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
         var inputs = new List<VoyageAIMultimodalInput> { VoyageAIMultimodalInput.FromText("test text") };
 
         // Act
-        var result = await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false);
+        var result = await service.GenerateMultimodalEmbeddingsAsync(inputs);
 
         // Assert
         result.Should().NotBeNull();
@@ -345,7 +344,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
     }
 
     [Fact]
-    public async Task GenerateMultimodalEmbeddingsAsync_HandlesApiError()
+    public async Task GenerateMultimodalEmbeddingsHandlesApiErrorAsync()
     {
         // Arrange
         this._messageHandlerStub.ResponseToReturn = new HttpResponseMessage(HttpStatusCode.InternalServerError)
@@ -363,12 +362,11 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(
-            async () => await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false)
-        ).ConfigureAwait(false);
+            async () => await service.GenerateMultimodalEmbeddingsAsync(inputs));
     }
 
     [Fact]
-    public async Task GenerateEmbeddingsAsync_WrapsToMultimodalCall()
+    public async Task GenerateEmbeddingsWrapsToMultimodalCallAsync()
     {
         // Arrange
         var expectedEmbedding = new[] { 0.1f, 0.2f, 0.3f };
@@ -396,7 +394,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
         var data = new List<string> { "text1" };
 
         // Act
-        var result = await service.GenerateEmbeddingsAsync(data).ConfigureAwait(false);
+        var result = await service.GenerateEmbeddingsAsync(data);
 
         // Assert
         result.Should().NotBeNull();
@@ -444,7 +442,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
     }
 
     [Fact]
-    public async Task GenerateMultimodalEmbeddingsAsync_WithVoyageMultimodal35_SendsCorrectModel()
+    public async Task GenerateMultimodalEmbeddingsWithVoyageMultimodal35SendsCorrectModelAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -470,7 +468,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
         var inputs = new List<VoyageAIMultimodalInput> { VoyageAIMultimodalInput.FromText("test text for multimodal 3.5") };
 
         // Act
-        var result = await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false);
+        var result = await service.GenerateMultimodalEmbeddingsAsync(inputs);
 
         // Assert
         result.Should().NotBeNull();
@@ -497,7 +495,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
         {
             if (request.Content is not null)
             {
-                this.RequestContent = await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                this.RequestContent = await request.Content.ReadAsStringAsync(cancellationToken);
             }
 
             foreach (var header in request.Headers)

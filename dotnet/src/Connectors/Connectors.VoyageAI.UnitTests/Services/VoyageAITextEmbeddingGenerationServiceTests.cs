@@ -8,9 +8,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.SemanticKernel.Connectors.VoyageAI;
-using Moq;
-using Moq.Protected;
 using Xunit;
 
 namespace Microsoft.SemanticKernel.Connectors.VoyageAI.UnitTests.Services;
@@ -69,7 +66,7 @@ public sealed class VoyageAITextEmbeddingGenerationServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GenerateEmbeddingsAsyncShouldReturnEmbeddings()
+    public async Task GenerateEmbeddingsShouldReturnEmbeddingsAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -96,7 +93,7 @@ public sealed class VoyageAITextEmbeddingGenerationServiceTests : IDisposable
         var data = new List<string> { "text1", "text2" };
 
         // Act
-        var result = await service.GenerateEmbeddingsAsync(data).ConfigureAwait(false);
+        var result = await service.GenerateEmbeddingsAsync(data);
 
         // Assert
         result.Should().NotBeNull();
@@ -106,7 +103,7 @@ public sealed class VoyageAITextEmbeddingGenerationServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GenerateEmbeddingsAsyncShouldSendCorrectRequest()
+    public async Task GenerateEmbeddingsShouldSendCorrectRequestAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -132,7 +129,7 @@ public sealed class VoyageAITextEmbeddingGenerationServiceTests : IDisposable
         var data = new List<string> { "test text" };
 
         // Act
-        await service.GenerateEmbeddingsAsync(data).ConfigureAwait(false);
+        await service.GenerateEmbeddingsAsync(data);
 
         // Assert
         this._messageHandlerStub.RequestContent.Should().NotBeNull();
@@ -142,7 +139,7 @@ public sealed class VoyageAITextEmbeddingGenerationServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GenerateEmbeddingsAsyncShouldApplyExecutionSettings()
+    public async Task GenerateEmbeddingsShouldApplyExecutionSettingsAsync()
     {
         // Arrange
         var responseContent = JsonSerializer.Serialize(new
@@ -174,7 +171,7 @@ public sealed class VoyageAITextEmbeddingGenerationServiceTests : IDisposable
         };
 
         // Act
-        await service.GenerateEmbeddingsAsync(new List<string> { "test text" }, settings).ConfigureAwait(false);
+        await service.GenerateEmbeddingsAsync(new List<string> { "test text" }, settings);
 
         // Assert
         using var doc = JsonDocument.Parse(this._messageHandlerStub.RequestContent!);
@@ -186,7 +183,7 @@ public sealed class VoyageAITextEmbeddingGenerationServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GenerateEmbeddingsAsyncShouldHandleApiError()
+    public async Task GenerateEmbeddingsShouldHandleApiErrorAsync()
     {
         // Arrange
         this._messageHandlerStub.ResponseToReturn = new HttpResponseMessage(HttpStatusCode.BadRequest)
@@ -204,8 +201,7 @@ public sealed class VoyageAITextEmbeddingGenerationServiceTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(
-            async () => await service.GenerateEmbeddingsAsync(data).ConfigureAwait(false)
-        ).ConfigureAwait(false);
+            async () => await service.GenerateEmbeddingsAsync(data));
     }
 
     [Fact]
@@ -240,7 +236,7 @@ public sealed class VoyageAITextEmbeddingGenerationServiceTests : IDisposable
         );
 
         // Act
-        await service.GenerateEmbeddingsAsync(new List<string> { "text" }).ConfigureAwait(false);
+        await service.GenerateEmbeddingsAsync(new List<string> { "text" });
 
         // Assert
         this._messageHandlerStub.RequestUri.Should().NotBeNull();
@@ -260,7 +256,7 @@ public sealed class VoyageAITextEmbeddingGenerationServiceTests : IDisposable
         );
 
         // Act
-        await service.GenerateEmbeddingsAsync(new List<string> { "text" }).ConfigureAwait(false);
+        await service.GenerateEmbeddingsAsync(new List<string> { "text" });
 
         // Assert
         this._messageHandlerStub.RequestUri.Should().NotBeNull();
@@ -305,7 +301,7 @@ public sealed class VoyageAITextEmbeddingGenerationServiceTests : IDisposable
 
             if (request.Content is not null)
             {
-                this.RequestContent = await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                this.RequestContent = await request.Content.ReadAsStringAsync(cancellationToken);
             }
 
             foreach (var header in request.Headers)
