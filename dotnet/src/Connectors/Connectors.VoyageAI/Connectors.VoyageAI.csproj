@@ -7,7 +7,10 @@
     <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <NoWarn>$(NoWarn);CA2227;SKEXP0001;SKEXP0070</NoWarn>
+    <!-- IDE0005: with ImplicitUsings enabled, the explicit usings in the shared InternalUtilities
+         source files (imported below) are flagged as unnecessary for this project only. Suppress it
+         here so dotnet-format does not try to edit those shared files. -->
+    <NoWarn>$(NoWarn);CA2227;SKEXP0001;SKEXP0070;IDE0005</NoWarn>
   </PropertyGroup>
 
   <Import Project="$(RepoRoot)/dotnet/src/InternalUtilities/src/InternalUtilities.props" />
