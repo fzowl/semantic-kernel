@@ -1,6 +1,6 @@
 # Copyright (c) Microsoft. All rights reserved.
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import Field
 
@@ -26,9 +26,9 @@ class VoyageAIEmbeddingPromptExecutionSettings(PromptExecutionSettings):
         default=None, alias="encoding_format"
     )
 
-    def prepare_settings_dict(self) -> dict:
+    def prepare_settings_dict(self, **kwargs: Any) -> dict[str, Any]:
         """Prepare settings for API call."""
-        settings = {}
+        settings: dict[str, Any] = {}
         if self.input_type:
             settings["input_type"] = self.input_type
         if self.truncation is not None:
@@ -51,9 +51,9 @@ class VoyageAIContextualizedEmbeddingPromptExecutionSettings(PromptExecutionSett
     ai_model_id: str | None = None
     input_type: Literal["query", "document"] | None = None
 
-    def prepare_settings_dict(self) -> dict:
+    def prepare_settings_dict(self, **kwargs: Any) -> dict[str, Any]:
         """Prepare settings for API call."""
-        settings = {}
+        settings: dict[str, Any] = {}
         if self.input_type:
             settings["input_type"] = self.input_type
         return settings
@@ -72,9 +72,9 @@ class VoyageAIMultimodalEmbeddingPromptExecutionSettings(PromptExecutionSettings
     input_type: Literal["query", "document"] | None = None
     truncation: bool = True
 
-    def prepare_settings_dict(self) -> dict:
+    def prepare_settings_dict(self, **kwargs: Any) -> dict[str, Any]:
         """Prepare settings for API call."""
-        settings = {}
+        settings: dict[str, Any] = {}
         if self.input_type:
             settings["input_type"] = self.input_type
         if self.truncation is not None:
@@ -95,9 +95,9 @@ class VoyageAIRerankPromptExecutionSettings(PromptExecutionSettings):
     top_k: int | None = None
     truncation: bool = True
 
-    def prepare_settings_dict(self) -> dict:
+    def prepare_settings_dict(self, **kwargs: Any) -> dict[str, Any]:
         """Prepare settings for API call."""
-        settings = {}
+        settings: dict[str, Any] = {}
         if self.top_k:
             settings["top_k"] = self.top_k
         if self.truncation is not None:

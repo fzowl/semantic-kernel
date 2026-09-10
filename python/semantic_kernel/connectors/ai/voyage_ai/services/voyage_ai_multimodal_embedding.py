@@ -156,7 +156,7 @@ class VoyageAIMultimodalEmbedding(VoyageAIBase, EmbeddingGeneratorBase):
             ndarray: Array of embeddings.
         """
         # Convert each text to a single-item list (required by VoyageAI multimodal API)
-        multimodal_inputs = [[text] for text in texts]
+        multimodal_inputs: list[Union[str, "Image", list[Union[str, "Image"]]]] = [[text] for text in texts]
         return await self.generate_multimodal_embeddings(multimodal_inputs, settings, **kwargs)
 
     @override
