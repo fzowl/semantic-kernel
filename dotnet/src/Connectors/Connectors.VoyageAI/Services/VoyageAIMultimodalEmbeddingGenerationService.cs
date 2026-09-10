@@ -61,26 +61,33 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationService : ITextEmbeddin
     public IReadOnlyDictionary<string, object?> Attributes => this._attributes;
 
     /// <summary>
-    /// Generates multimodal embeddings for text and/or images.
+    /// Generates multimodal embeddings for interleaved text and/or images.
     /// </summary>
-    /// <param name="inputs">List of inputs. Each input can be:
-    /// - A string (text)
-    /// - A base64-encoded image string
-    /// - A dictionary with "type" and "content" keys for mixed inputs</param>
+    /// <param name="inputs">List of inputs; each input is composed of one or more ordered
+    /// <see cref="VoyageAIMultimodalContent"/> items (text and/or images) and produces one embedding.</param>
+    /// <param name="executionSettings">Optional execution settings. Use
+    /// <see cref="VoyageAIMultimodalEmbeddingPromptExecutionSettings"/> to control <c>input_type</c>
+    /// ("query"/"document") and <c>truncation</c>.</param>
     /// <param name="kernel">The <see cref="Kernel"/> containing services, plugins, and other state.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
-    /// <returns>A list of multimodal embeddings.</returns>
+    /// <returns>A list of multimodal embeddings, one per input.</returns>
     public async Task<IList<ReadOnlyMemory<float>>> GenerateMultimodalEmbeddingsAsync(
-        IList<object> inputs,
+        IList<VoyageAIMultimodalInput> inputs,
+        PromptExecutionSettings? executionSettings = null,
         Kernel? kernel = null,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(inputs);
+
+        var settings = VoyageAIMultimodalEmbeddingPromptExecutionSettings.FromExecutionSettings(executionSettings)
+            ?? new VoyageAIMultimodalEmbeddingPromptExecutionSettings();
+
         var request = new MultimodalEmbeddingRequest
         {
-            Inputs = inputs,
+            Inputs = inputs.Select(ToRequestInput).ToList(),
             Model = this._modelId,
-            InputType = null,
-            Truncation = true
+            InputType = settings.InputType,
+            Truncation = settings.Truncation
         };
 
         var response = await this._client.SendRequestAsync<MultimodalEmbeddingResponse>(
@@ -97,13 +104,46 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationService : ITextEmbeddin
     }
 
     /// <inheritdoc/>
-    public async Task<IList<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
+    public Task<IList<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
         IList<string> data,
         Kernel? kernel = null,
         CancellationToken cancellationToken = default)
+        => this.GenerateEmbeddingsAsync(data, executionSettings: null, kernel, cancellationToken);
+
+    /// <summary>
+    /// Generates embeddings for text-only inputs, wrapping each string as a single-item multimodal input.
+    /// </summary>
+    /// <param name="data">The text inputs to embed.</param>
+    /// <param name="executionSettings">Optional execution settings (see
+    /// <see cref="VoyageAIMultimodalEmbeddingPromptExecutionSettings"/>).</param>
+    /// <param name="kernel">The <see cref="Kernel"/> containing services, plugins, and other state.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
+    /// <returns>A list of embeddings, one per input text.</returns>
+    public Task<IList<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
+        IList<string> data,
+        PromptExecutionSettings? executionSettings,
+        Kernel? kernel = null,
+        CancellationToken cancellationToken = default)
     {
-        // Convert text-only inputs to multimodal format
-        var inputs = data.Cast<object>().ToList();
-        return await this.GenerateMultimodalEmbeddingsAsync(inputs, kernel, cancellationToken).ConfigureAwait(false);
+        Verify.NotNull(data);
+
+        // Each text becomes a single-item input, matching the structured payload the API expects.
+        var inputs = data.Select(VoyageAIMultimodalInput.FromText).ToList();
+        return this.GenerateMultimodalEmbeddingsAsync(inputs, executionSettings, kernel, cancellationToken);
+    }
+
+    private static MultimodalInput ToRequestInput(VoyageAIMultimodalInput input)
+    {
+        Verify.NotNull(input);
+        return new MultimodalInput
+        {
+            Content = input.Content.Select(c => new MultimodalContentItem
+            {
+                Type = c.Type,
+                Text = c.Text,
+                ImageUrl = c.ImageUrl,
+                ImageBase64 = c.ImageBase64
+            }).ToList()
+        };
     }
 }

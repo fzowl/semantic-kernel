@@ -152,8 +152,10 @@ internal sealed class RerankDataItem
 
 internal sealed class MultimodalEmbeddingRequest
 {
+    // Each input is an object with a "content" list, per
+    // https://docs.voyageai.com/reference/multimodal-embeddings-api
     [JsonPropertyName("inputs")]
-    public required IList<object> Inputs { get; set; }
+    public required IList<MultimodalInput> Inputs { get; set; }
 
     [JsonPropertyName("model")]
     public required string Model { get; set; }
@@ -163,6 +165,28 @@ internal sealed class MultimodalEmbeddingRequest
 
     [JsonPropertyName("truncation")]
     public bool? Truncation { get; set; }
+}
+
+internal sealed class MultimodalInput
+{
+    [JsonPropertyName("content")]
+    public required IList<MultimodalContentItem> Content { get; set; }
+}
+
+internal sealed class MultimodalContentItem
+{
+    /// <summary>One of "text", "image_url", or "image_base64".</summary>
+    [JsonPropertyName("type")]
+    public required string Type { get; set; }
+
+    [JsonPropertyName("text")]
+    public string? Text { get; set; }
+
+    [JsonPropertyName("image_url")]
+    public string? ImageUrl { get; set; }
+
+    [JsonPropertyName("image_base64")]
+    public string? ImageBase64 { get; set; }
 }
 
 internal sealed class MultimodalEmbeddingResponse

@@ -120,6 +120,43 @@ public sealed class VoyageAITextRerankingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task RerankAsyncShouldApplyExecutionSettings()
+    {
+        // Arrange
+        var responseContent = JsonSerializer.Serialize(new
+        {
+            data = new[] { new { index = 0, relevance_score = 0.5 } },
+            usage = new { total_tokens = 5 }
+        });
+
+        this._messageHandlerStub.ResponseToReturn = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(responseContent)
+        };
+
+        var service = new VoyageAITextRerankingService(
+            modelId: "rerank-2.5",
+            apiKey: "test-api-key",
+            httpClient: this._httpClient
+        );
+
+        var settings = new VoyageAIRerankPromptExecutionSettings
+        {
+            TopK = 3,
+            Truncation = false
+        };
+
+        // Act
+        await service.RerankAsync("What is SK?", new List<string> { "doc" }, settings).ConfigureAwait(false);
+
+        // Assert
+        using var doc = JsonDocument.Parse(this._messageHandlerStub.RequestContent!);
+        var root = doc.RootElement;
+        root.GetProperty("top_k").GetInt32().Should().Be(3);
+        root.GetProperty("truncation").GetBoolean().Should().BeFalse();
+    }
+
+    [Fact]
     public async Task RerankAsyncShouldHandleEmptyResults()
     {
         // Arrange

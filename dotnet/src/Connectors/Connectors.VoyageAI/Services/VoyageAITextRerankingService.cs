@@ -53,19 +53,42 @@ public sealed class VoyageAITextRerankingService : ITextRerankingService
     public IReadOnlyDictionary<string, object?> Attributes => this._attributes;
 
     /// <inheritdoc/>
-    public async Task<IList<RerankResult>> RerankAsync(
+    public Task<IList<RerankResult>> RerankAsync(
         string query,
         IList<string> documents,
         Kernel? kernel = null,
         CancellationToken cancellationToken = default)
+        => this.RerankAsync(query, documents, executionSettings: null, kernel, cancellationToken);
+
+    /// <summary>
+    /// Reranks a list of documents based on their relevance to a query, using the supplied settings.
+    /// </summary>
+    /// <param name="query">The query to rank documents against.</param>
+    /// <param name="documents">The list of documents to rerank.</param>
+    /// <param name="executionSettings">Optional execution settings. Use
+    /// <see cref="VoyageAIRerankPromptExecutionSettings"/> to control <c>top_k</c> and <c>truncation</c>.</param>
+    /// <param name="kernel">The <see cref="Kernel"/> containing services, plugins, and other state.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
+    /// <returns>A list of <see cref="RerankResult"/> sorted by relevance score in descending order.</returns>
+    public async Task<IList<RerankResult>> RerankAsync(
+        string query,
+        IList<string> documents,
+        PromptExecutionSettings? executionSettings,
+        Kernel? kernel = null,
+        CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(documents);
+
+        var settings = VoyageAIRerankPromptExecutionSettings.FromExecutionSettings(executionSettings)
+            ?? new VoyageAIRerankPromptExecutionSettings();
+
         var request = new RerankRequest
         {
             Query = query,
             Documents = documents,
             Model = this._modelId,
-            TopK = null,
-            Truncation = true
+            TopK = settings.TopK,
+            Truncation = settings.Truncation
         };
 
         var response = await this._client.SendRequestAsync<RerankResponse>(

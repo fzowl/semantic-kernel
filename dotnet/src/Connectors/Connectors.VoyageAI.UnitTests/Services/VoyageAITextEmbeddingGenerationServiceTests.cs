@@ -142,6 +142,50 @@ public sealed class VoyageAITextEmbeddingGenerationServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GenerateEmbeddingsAsyncShouldApplyExecutionSettings()
+    {
+        // Arrange
+        var responseContent = JsonSerializer.Serialize(new
+        {
+            data = new[]
+            {
+                new { embedding = new[] { 0.1f, 0.2f }, index = 0, @object = "embedding" }
+            },
+            usage = new { total_tokens = 5 }
+        });
+
+        this._messageHandlerStub.ResponseToReturn = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(responseContent)
+        };
+
+        var service = new VoyageAITextEmbeddingGenerationService(
+            modelId: "voyage-3-large",
+            apiKey: "test-api-key",
+            httpClient: this._httpClient
+        );
+
+        var settings = new VoyageAIEmbeddingPromptExecutionSettings
+        {
+            InputType = "document",
+            Truncation = false,
+            OutputDimension = 512,
+            OutputDtype = "int8"
+        };
+
+        // Act
+        await service.GenerateEmbeddingsAsync(new List<string> { "test text" }, settings).ConfigureAwait(false);
+
+        // Assert
+        using var doc = JsonDocument.Parse(this._messageHandlerStub.RequestContent!);
+        var root = doc.RootElement;
+        root.GetProperty("input_type").GetString().Should().Be("document");
+        root.GetProperty("truncation").GetBoolean().Should().BeFalse();
+        root.GetProperty("output_dimension").GetInt32().Should().Be(512);
+        root.GetProperty("output_dtype").GetString().Should().Be("int8");
+    }
+
+    [Fact]
     public async Task GenerateEmbeddingsAsyncShouldHandleApiError()
     {
         // Arrange

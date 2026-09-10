@@ -53,19 +53,41 @@ public sealed class VoyageAITextEmbeddingGenerationService : ITextEmbeddingGener
     public IReadOnlyDictionary<string, object?> Attributes => this._attributes;
 
     /// <inheritdoc/>
-    public async Task<IList<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
+    public Task<IList<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
         IList<string> data,
         Kernel? kernel = null,
         CancellationToken cancellationToken = default)
+        => this.GenerateEmbeddingsAsync(data, executionSettings: null, kernel, cancellationToken);
+
+    /// <summary>
+    /// Generates embeddings for the given data using the supplied execution settings.
+    /// </summary>
+    /// <param name="data">The text inputs to embed.</param>
+    /// <param name="executionSettings">Optional execution settings. Use
+    /// <see cref="VoyageAIEmbeddingPromptExecutionSettings"/> to control <c>input_type</c>
+    /// ("query"/"document"), <c>truncation</c>, <c>output_dimension</c> and <c>output_dtype</c>.</param>
+    /// <param name="kernel">The <see cref="Kernel"/> containing services, plugins, and other state.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
+    /// <returns>A list of embeddings, one per input text.</returns>
+    public async Task<IList<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
+        IList<string> data,
+        PromptExecutionSettings? executionSettings,
+        Kernel? kernel = null,
+        CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(data);
+
+        var settings = VoyageAIEmbeddingPromptExecutionSettings.FromExecutionSettings(executionSettings)
+            ?? new VoyageAIEmbeddingPromptExecutionSettings();
+
         var request = new EmbeddingRequest
         {
             Input = data,
             Model = this._modelId,
-            InputType = null,
-            Truncation = true,
-            OutputDimension = null,
-            OutputDtype = null
+            InputType = settings.InputType,
+            Truncation = settings.Truncation,
+            OutputDimension = settings.OutputDimension,
+            OutputDtype = settings.OutputDtype
         };
 
         var response = await this._client.SendRequestAsync<EmbeddingResponse>(

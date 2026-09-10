@@ -89,28 +89,30 @@ class VoyageAIMultimodalEmbedding(VoyageAIBase, EmbeddingGeneratorBase):
         """Generate multimodal embeddings for text and/or images.
 
         Args:
-            inputs: List of inputs. Each input can be:
-                   - A string (text)
-                   - A PIL Image object
-                   - A list containing text strings and/or PIL Images (interleaved)
+            inputs: List of inputs, where each top-level element is a single input that
+                   produces exactly one embedding. Each element can be:
+                   - A string (a text-only input)
+                   - A PIL Image object (an image-only input)
+                   - A list containing text strings and/or PIL Images (one input with
+                     interleaved content)
             settings: Prompt execution settings (optional).
             kwargs: Additional arguments to pass to the request.
 
         Returns:
-            ndarray: Array of multimodal embeddings.
+            ndarray: Array of multimodal embeddings, one row per top-level input element.
 
         Example:
             ```python
             from PIL import Image
 
-            # Text only
-            embeddings = await service.generate_multimodal_embeddings(["Text description of image"])
+            # Two text-only inputs -> two embeddings
+            embeddings = await service.generate_multimodal_embeddings(["a caption", "another caption"])
 
-            # Image only
+            # One image-only input -> one embedding
             img = Image.open("photo.jpg")
             embeddings = await service.generate_multimodal_embeddings([img])
 
-            # Interleaved text and images
+            # One input made of interleaved text and images -> one embedding
             embeddings = await service.generate_multimodal_embeddings([
                 ["Chapter 1: Introduction", img1, "This shows...", img2]
             ])

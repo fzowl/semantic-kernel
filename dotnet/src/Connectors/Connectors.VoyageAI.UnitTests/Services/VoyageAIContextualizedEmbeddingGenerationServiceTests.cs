@@ -165,6 +165,50 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
     }
 
     [Fact]
+    public async Task GenerateContextualizedEmbeddingsAsync_AppliesInputTypeAndOmitsTruncation()
+    {
+        // Arrange
+        var responseContent = JsonSerializer.Serialize(new
+        {
+            results = new[]
+            {
+                new
+                {
+                    embeddings = new[]
+                    {
+                        new { embedding = new[] { 0.1f, 0.2f }, index = 0 }
+                    }
+                }
+            },
+            total_tokens = 10
+        });
+
+        this._messageHandlerStub.ResponseToReturn = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(responseContent)
+        };
+
+        var service = new VoyageAIContextualizedEmbeddingGenerationService(
+            modelId: "voyage-context-4",
+            apiKey: "test-api-key",
+            httpClient: this._httpClient
+        );
+
+        var inputs = new List<IList<string>> { new List<string> { "chunk" } };
+        var settings = new VoyageAIContextualizedEmbeddingPromptExecutionSettings { InputType = "query" };
+
+        // Act
+        await service.GenerateContextualizedEmbeddingsAsync(inputs, settings).ConfigureAwait(false);
+
+        // Assert
+        using var doc = JsonDocument.Parse(this._messageHandlerStub.RequestContent!);
+        var root = doc.RootElement;
+        root.GetProperty("input_type").GetString().Should().Be("query");
+        // Contextualized embeddings do not support truncation, so the field must be omitted.
+        root.TryGetProperty("truncation", out _).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task GenerateContextualizedEmbeddingsAsync_SendsCorrectModel()
     {
         // Arrange

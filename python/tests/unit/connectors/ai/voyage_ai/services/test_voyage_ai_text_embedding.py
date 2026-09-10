@@ -45,6 +45,26 @@ def test_init_from_env(voyage_ai_unit_test_env):
     assert embedding_service.ai_model_id == "voyage-3-large"
 
 
+def test_init_uses_embedding_model_id_from_settings(voyage_ai_unit_test_env):
+    """Test that ai_model_id falls back to the VOYAGE_AI_EMBEDDING_MODEL_ID setting."""
+    embedding_service = VoyageAITextEmbedding(
+        api_key="test-api-key",
+    )
+
+    assert embedding_service.ai_model_id == "voyage-3-large"
+
+
+def test_init_without_model_id_raises(monkeypatch):
+    """Test that omitting the model everywhere raises a clear initialization error."""
+    from semantic_kernel.exceptions.service_exceptions import ServiceInitializationError
+
+    monkeypatch.setenv("VOYAGE_AI_API_KEY", "test-api-key")
+    monkeypatch.delenv("VOYAGE_AI_EMBEDDING_MODEL_ID", raising=False)
+
+    with pytest.raises(ServiceInitializationError):
+        VoyageAITextEmbedding(api_key="test-api-key", env_file_path="non_existent.env")
+
+
 def test_init_with_custom_endpoint(voyage_ai_unit_test_env):
     """Test initialization with custom endpoint."""
     custom_endpoint = "https://custom-endpoint.com/v1"

@@ -114,7 +114,11 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
             httpClient: this._httpClient
         );
 
-        var inputs = new List<object> { "text1", "text2" };
+        var inputs = new List<VoyageAIMultimodalInput>
+        {
+            VoyageAIMultimodalInput.FromText("text1"),
+            VoyageAIMultimodalInput.FromText("text2")
+        };
 
         // Act
         var result = await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false);
@@ -133,8 +137,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
         var expectedEmbeddings = new List<float[]>
         {
             new[] { 0.1f, 0.2f, 0.3f },
-            new[] { 0.4f, 0.5f, 0.6f },
-            new[] { 0.7f, 0.8f, 0.9f }
+            new[] { 0.4f, 0.5f, 0.6f }
         };
 
         var responseContent = JsonSerializer.Serialize(new
@@ -142,8 +145,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
             data = new[]
             {
                 new { embedding = expectedEmbeddings[0], index = 0, @object = "embedding" },
-                new { embedding = expectedEmbeddings[1], index = 1, @object = "embedding" },
-                new { embedding = expectedEmbeddings[2], index = 2, @object = "embedding" }
+                new { embedding = expectedEmbeddings[1], index = 1, @object = "embedding" }
             },
             usage = new { total_tokens = 30 }
         });
@@ -159,12 +161,13 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
             httpClient: this._httpClient
         );
 
-        // Mix of text and image (as objects)
-        var inputs = new List<object>
+        // Interleaved text + image within a single input, plus a text-only input.
+        var inputs = new List<VoyageAIMultimodalInput>
         {
-            "text1",
-            "base64encodedimage1",
-            "text2"
+            new(
+                VoyageAIMultimodalContent.FromText("A banana"),
+                VoyageAIMultimodalContent.FromImageUrl("https://example.com/banana.jpg")),
+            VoyageAIMultimodalInput.FromText("text2")
         };
 
         // Act
@@ -172,10 +175,102 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().HaveCount(3);
+        result.Should().HaveCount(2);
         result[0].Length.Should().Be(3);
         result[1].Length.Should().Be(3);
-        result[2].Length.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task GenerateMultimodalEmbeddingsAsync_SendsStructuredContentPayload()
+    {
+        // Arrange
+        var responseContent = JsonSerializer.Serialize(new
+        {
+            data = new[]
+            {
+                new { embedding = new[] { 0.1f, 0.2f }, index = 0, @object = "embedding" }
+            },
+            usage = new { total_tokens = 5 }
+        });
+
+        this._messageHandlerStub.ResponseToReturn = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(responseContent)
+        };
+
+        var service = new VoyageAIMultimodalEmbeddingGenerationService(
+            modelId: "voyage-multimodal-3",
+            apiKey: "test-api-key",
+            httpClient: this._httpClient
+        );
+
+        var inputs = new List<VoyageAIMultimodalInput>
+        {
+            new(
+                VoyageAIMultimodalContent.FromText("a caption"),
+                VoyageAIMultimodalContent.FromImageBase64("data:image/png;base64,iVBORw0KGgo="))
+        };
+
+        // Act
+        await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false);
+
+        // Assert - verify the official structured payload shape
+        this._messageHandlerStub.RequestContent.Should().NotBeNull();
+        using var doc = JsonDocument.Parse(this._messageHandlerStub.RequestContent!);
+        var root = doc.RootElement;
+        root.GetProperty("model").GetString().Should().Be("voyage-multimodal-3");
+
+        var inputsElement = root.GetProperty("inputs");
+        inputsElement.GetArrayLength().Should().Be(1);
+
+        var content = inputsElement[0].GetProperty("content");
+        content.GetArrayLength().Should().Be(2);
+
+        content[0].GetProperty("type").GetString().Should().Be("text");
+        content[0].GetProperty("text").GetString().Should().Be("a caption");
+
+        content[1].GetProperty("type").GetString().Should().Be("image_base64");
+        content[1].GetProperty("image_base64").GetString().Should().Be("data:image/png;base64,iVBORw0KGgo=");
+    }
+
+    [Fact]
+    public async Task GenerateMultimodalEmbeddingsAsync_AppliesExecutionSettings()
+    {
+        // Arrange
+        var responseContent = JsonSerializer.Serialize(new
+        {
+            data = new[]
+            {
+                new { embedding = new[] { 0.1f, 0.2f }, index = 0, @object = "embedding" }
+            },
+            usage = new { total_tokens = 5 }
+        });
+
+        this._messageHandlerStub.ResponseToReturn = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(responseContent)
+        };
+
+        var service = new VoyageAIMultimodalEmbeddingGenerationService(
+            modelId: "voyage-multimodal-3",
+            apiKey: "test-api-key",
+            httpClient: this._httpClient
+        );
+
+        var settings = new VoyageAIMultimodalEmbeddingPromptExecutionSettings
+        {
+            InputType = "query",
+            Truncation = false
+        };
+
+        // Act
+        await service.GenerateEmbeddingsAsync(new List<string> { "hello" }, settings).ConfigureAwait(false);
+
+        // Assert
+        using var doc = JsonDocument.Parse(this._messageHandlerStub.RequestContent!);
+        var root = doc.RootElement;
+        root.GetProperty("input_type").GetString().Should().Be("query");
+        root.GetProperty("truncation").GetBoolean().Should().BeFalse();
     }
 
     [Fact]
@@ -202,7 +297,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
             httpClient: this._httpClient
         );
 
-        var inputs = new List<object> { "test text" };
+        var inputs = new List<VoyageAIMultimodalInput> { VoyageAIMultimodalInput.FromText("test text") };
 
         // Act
         await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false);
@@ -238,7 +333,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
             httpClient: this._httpClient
         );
 
-        var inputs = new List<object> { "test text" };
+        var inputs = new List<VoyageAIMultimodalInput> { VoyageAIMultimodalInput.FromText("test text") };
 
         // Act
         var result = await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false);
@@ -264,7 +359,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
             httpClient: this._httpClient
         );
 
-        var inputs = new List<object> { "test" };
+        var inputs = new List<VoyageAIMultimodalInput> { VoyageAIMultimodalInput.FromText("test") };
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(
@@ -307,6 +402,12 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
         result.Should().NotBeNull();
         result.Should().HaveCount(1);
         result[0].Length.Should().Be(3);
+
+        // The text path must produce the structured single-item content payload.
+        using var doc = JsonDocument.Parse(this._messageHandlerStub.RequestContent!);
+        var content = doc.RootElement.GetProperty("inputs")[0].GetProperty("content");
+        content[0].GetProperty("type").GetString().Should().Be("text");
+        content[0].GetProperty("text").GetString().Should().Be("text1");
     }
 
     [Fact]
@@ -366,7 +467,7 @@ public sealed class VoyageAIMultimodalEmbeddingGenerationServiceTests : IDisposa
             httpClient: this._httpClient
         );
 
-        var inputs = new List<object> { "test text for multimodal 3.5" };
+        var inputs = new List<VoyageAIMultimodalInput> { VoyageAIMultimodalInput.FromText("test text for multimodal 3.5") };
 
         // Act
         var result = await service.GenerateMultimodalEmbeddingsAsync(inputs).ConfigureAwait(false);

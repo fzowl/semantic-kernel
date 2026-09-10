@@ -55,21 +55,32 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationService : ITextEmbe
     /// <summary>
     /// Generates contextualized embeddings for document chunks.
     /// </summary>
-    /// <param name="inputs">List of lists where each inner list contains document chunks.</param>
+    /// <param name="inputs">List of lists where each inner list contains the ordered chunks of one document,
+    /// per https://docs.voyageai.com/docs/contextualized-chunk-embeddings.</param>
+    /// <param name="executionSettings">Optional execution settings. Use
+    /// <see cref="VoyageAIContextualizedEmbeddingPromptExecutionSettings"/> to control <c>input_type</c>
+    /// ("query"/"document").</param>
     /// <param name="kernel">The <see cref="Kernel"/> containing services, plugins, and other state.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
     /// <returns>A list of embeddings for all chunks across all documents.</returns>
     public async Task<IList<ReadOnlyMemory<float>>> GenerateContextualizedEmbeddingsAsync(
         IList<IList<string>> inputs,
+        PromptExecutionSettings? executionSettings = null,
         Kernel? kernel = null,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(inputs);
+
+        var settings = VoyageAIContextualizedEmbeddingPromptExecutionSettings.FromExecutionSettings(executionSettings)
+            ?? new VoyageAIContextualizedEmbeddingPromptExecutionSettings();
+
         var request = new ContextualizedEmbeddingRequest
         {
             Inputs = inputs,
             Model = this._modelId,
-            InputType = null,
-            Truncation = true
+            InputType = settings.InputType,
+            // Contextualized embeddings do not support truncation; the field is omitted (left null).
+            Truncation = null
         };
 
         var response = await this._client.SendRequestAsync<ContextualizedEmbeddingResponse>(
@@ -90,13 +101,31 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationService : ITextEmbe
     }
 
     /// <inheritdoc/>
-    public async Task<IList<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
+    public Task<IList<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
         IList<string> data,
         Kernel? kernel = null,
         CancellationToken cancellationToken = default)
+        => this.GenerateEmbeddingsAsync(data, executionSettings: null, kernel, cancellationToken);
+
+    /// <summary>
+    /// Generates embeddings for the given texts, treating them as the ordered chunks of a single document.
+    /// </summary>
+    /// <param name="data">The document chunks to embed.</param>
+    /// <param name="executionSettings">Optional execution settings (see
+    /// <see cref="VoyageAIContextualizedEmbeddingPromptExecutionSettings"/>).</param>
+    /// <param name="kernel">The <see cref="Kernel"/> containing services, plugins, and other state.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
+    /// <returns>A list of embeddings, one per chunk.</returns>
+    public Task<IList<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
+        IList<string> data,
+        PromptExecutionSettings? executionSettings,
+        Kernel? kernel = null,
+        CancellationToken cancellationToken = default)
     {
-        // Wrap data as a single input for contextualized embeddings
+        Verify.NotNull(data);
+
+        // Wrap data as a single document (list of chunks) for contextualized embeddings.
         var inputs = new List<IList<string>> { data };
-        return await this.GenerateContextualizedEmbeddingsAsync(inputs, kernel, cancellationToken).ConfigureAwait(false);
+        return this.GenerateContextualizedEmbeddingsAsync(inputs, executionSettings, kernel, cancellationToken);
     }
 }
