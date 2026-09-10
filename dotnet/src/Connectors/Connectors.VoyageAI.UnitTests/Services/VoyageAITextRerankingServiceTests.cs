@@ -8,7 +8,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.SemanticKernel.Reranking;
 using Xunit;
 
 namespace Microsoft.SemanticKernel.Connectors.VoyageAI.UnitTests.Services;
