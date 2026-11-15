@@ -50,3 +50,7 @@ All base clients inherit from the [`AIServiceClientBase`](../../services/ai_serv
 |        | [`OllamaTextEmbedding`](./ollama/services/ollama_text_embedding.py) |
 | Onnx | [`OnnxGenAIChatCompletion`](./onnx/services/onnx_gen_ai_chat_completion.py) |
 |      | [`OnnxGenAITextCompletion`](./onnx/services/onnx_gen_ai_text_completion.py) |
+| Voyage AI by MongoDB | [`VoyageAITextEmbedding`](./voyage_ai/services/voyage_ai_text_embedding.py) |
+|        | [`VoyageAIContextualizedEmbedding`](./voyage_ai/services/voyage_ai_contextualized_embedding.py) |
+|        | [`VoyageAIMultimodalEmbedding`](./voyage_ai/services/voyage_ai_multimodal_embedding.py) |
+|        | [`VoyageAIReranker`](./voyage_ai/services/voyage_ai_reranker.py) |

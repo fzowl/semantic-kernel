@@ -152,6 +152,13 @@ usearch = [
     "usearch >= 2.16,< 2.25",
     "pyarrow>=12.0,<26.0"
 ]
+voyageai = [
+    # 0.4.0 is the first release with contextualized embeddings auto-chunking. The official client's
+    # get_default_base_url routes "al-" prefixed API keys to https://ai.mongodb.com/v1 and all others to
+    # https://api.voyageai.com/v1. The marker avoids a numpy conflict with the autogen extra on Python 3.13+:
+    # voyageai needs numpy >= 2.1 there, autogen-agentchat < 0.4 needs numpy < 2.
+    "voyageai >= 0.4.0; python_version < '3.13'"
+]
 weaviate = [
     "weaviate-client>=4.17.0,<5.0",
 ]
