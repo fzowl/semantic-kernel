@@ -1,0 +1,169 @@
+# Copyright (c) Microsoft. All rights reserved.
+
+import sys
+from typing import TYPE_CHECKING, Any, Union
+
+from numpy import array, ndarray
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
+from semantic_kernel.connectors.ai.embedding_generator_base import EmbeddingGeneratorBase
+from semantic_kernel.connectors.ai.voyage_ai.services.voyage_ai_base import VoyageAIBase
+from semantic_kernel.connectors.ai.voyage_ai.voyage_ai_prompt_execution_settings import (
+    VoyageAIMultimodalEmbeddingPromptExecutionSettings,
+)
+from semantic_kernel.exceptions.service_exceptions import (
+    ServiceInitializationError,
+    ServiceResponseException,
+)
+
+if TYPE_CHECKING:
+    from PIL.Image import Image
+
+    from semantic_kernel.connectors.ai.prompt_execution_settings import PromptExecutionSettings
+
+
+class VoyageAIMultimodalEmbedding(VoyageAIBase, EmbeddingGeneratorBase):
+    """Voyage AI by MongoDB Multimodal Embedding Service.
+
+    Generates embeddings for text, images, or interleaved text and images.
+    Supports voyage-multimodal-3.5 (also video input and ``output_dimension``) and voyage-multimodal-3.
+
+    Constraints:
+    - Maximum 1,000 inputs per request
+    - Images: ≤16 million pixels, ≤20 MB
+    - Total tokens per input: ≤32,000 (560 pixels = 1 token)
+    - Aggregate tokens across inputs: ≤320,000
+    """
+
+    def __init__(
+        self,
+        ai_model_id: str | None = None,
+        service_id: str | None = None,
+        api_key: str | None = None,
+        client: Any | None = None,
+        env_file_path: str | None = None,
+        endpoint: str | None = None,
+    ):
+        """Initialize Voyage AI multimodal embedding service.
+
+        Args:
+            ai_model_id: The Voyage AI model ID. Falls back to the ``multimodal_embedding_model_id``
+                setting (env var ``VOYAGE_MULTIMODAL_EMBEDDING_MODEL_ID``) when not provided.
+            service_id: The service ID (optional).
+            api_key: The Voyage AI API key (optional, defaults to the ``VOYAGE_API_KEY`` env var).
+            client: A pre-configured ``voyageai.AsyncClient`` (optional).
+            env_file_path: Path to .env file (optional).
+            endpoint: Explicit API base URL (optional, overrides the default derived from the API key).
+        """
+        # Use multimodal model from settings if not provided
+        if not ai_model_id:
+            from semantic_kernel.connectors.ai.voyage_ai.voyage_ai_settings import VoyageAISettings
+
+            settings = VoyageAISettings(api_key=api_key, env_file_path=env_file_path)  # type: ignore[arg-type]
+            ai_model_id = settings.multimodal_embedding_model_id
+
+        if not ai_model_id:
+            raise ServiceInitializationError(
+                "No model ID provided. Set ai_model_id parameter or "
+                "VOYAGE_MULTIMODAL_EMBEDDING_MODEL_ID environment variable."
+            )
+
+        super().__init__(
+            ai_model_id=ai_model_id,
+            service_id=service_id,
+            api_key=api_key,
+            client=client,
+            env_file_path=env_file_path,
+            endpoint=endpoint,
+        )
+
+    async def generate_multimodal_embeddings(
+        self,
+        inputs: list[Union[str, "Image", list[Union[str, "Image"]]]],
+        settings: "PromptExecutionSettings | None" = None,
+        **kwargs: Any,
+    ) -> ndarray:
+        """Generate multimodal embeddings for text and/or images.
+
+        Args:
+            inputs: List of inputs, where each top-level element is a single input that
+                   produces exactly one embedding. Each element can be:
+                   - A string (a text-only input)
+                   - A PIL Image object (an image-only input)
+                   - A list containing text strings and/or PIL Images (one input with
+                     interleaved content)
+            settings: Prompt execution settings (optional).
+            kwargs: Additional arguments to pass to the request.
+
+        Returns:
+            ndarray: Array of multimodal embeddings, one row per top-level input element.
+
+        Example:
+            ```python
+            from PIL import Image
+
+            # Two text-only inputs -> two embeddings
+            embeddings = await service.generate_multimodal_embeddings(["a caption", "another caption"])
+
+            # One image-only input -> one embedding
+            img = Image.open("photo.jpg")
+            embeddings = await service.generate_multimodal_embeddings([img])
+
+            # One input made of interleaved text and images -> one embedding
+            embeddings = await service.generate_multimodal_embeddings([
+                ["Chapter 1: Introduction", img1, "This shows...", img2]
+            ])
+            ```
+        """
+        if not settings:
+            settings = VoyageAIMultimodalEmbeddingPromptExecutionSettings()
+        else:
+            settings = self.get_prompt_execution_settings_from_settings(settings)
+
+        try:
+            # Call Voyage AI multimodal embeddings API
+            # The SDK expects every input to be a list of content items.
+            response = await self.aclient.multimodal_embed(
+                inputs=[item if isinstance(item, list) else [item] for item in inputs],
+                model=self.ai_model_id,
+                **settings.prepare_settings_dict(),
+            )
+
+            # Extract embeddings
+            embeddings = response.embeddings
+            return array(embeddings)
+
+        except Exception as e:
+            raise ServiceResponseException(f"Voyage AI multimodal embedding request failed: {e}") from e
+
+    @override
+    async def generate_embeddings(
+        self,
+        texts: list[str],
+        settings: "PromptExecutionSettings | None" = None,
+        **kwargs: Any,
+    ) -> ndarray:
+        """Generate embeddings for text inputs.
+
+        This method converts text-only inputs to multimodal format.
+
+        Args:
+            texts: List of text strings to generate embeddings for.
+            settings: Prompt execution settings (optional).
+            kwargs: Additional arguments to pass to the request.
+
+        Returns:
+            ndarray: Array of embeddings.
+        """
+        # Convert each text to a single-item list (required by the Voyage AI multimodal API)
+        multimodal_inputs: list[Union[str, "Image", list[Union[str, "Image"]]]] = [[text] for text in texts]
+        return await self.generate_multimodal_embeddings(multimodal_inputs, settings, **kwargs)
+
+    @override
+    def get_prompt_execution_settings_class(self) -> type["PromptExecutionSettings"]:
+        """Get the prompt execution settings class."""
+        return VoyageAIMultimodalEmbeddingPromptExecutionSettings

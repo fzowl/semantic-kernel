@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>Microsoft.SemanticKernel.Connectors.VoyageAI</AssemblyName>
+    <RootNamespace>Microsoft.SemanticKernel.Connectors.VoyageAI</RootNamespace>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- IDE0005: with ImplicitUsings enabled, the explicit usings in the shared InternalUtilities
+         source files (imported below) are flagged as unnecessary for this project only. Suppress it
+         here so dotnet-format does not try to edit those shared files. -->
+    <NoWarn>$(NoWarn);CA2227;SKEXP0001;SKEXP0070;IDE0005</NoWarn>
+  </PropertyGroup>
+
+  <!-- IMPORT NUGET PACKAGE SHARED PROPERTIES -->
+  <Import Project="$(RepoRoot)/dotnet/nuget/nuget-package.props" />
+  <Import Project="$(RepoRoot)/dotnet/src/InternalUtilities/src/InternalUtilities.props" />
+
+  <PropertyGroup>
+    <!-- NuGet Package Settings -->
+    <Title>Semantic Kernel - Voyage AI by MongoDB connectors</Title>
+    <Description>Semantic Kernel connector for Voyage AI by MongoDB. Contains services for text, contextualized and multimodal embeddings and for reranking.</Description>
+    <VersionSuffix>alpha</VersionSuffix>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\SemanticKernel.Abstractions\SemanticKernel.Abstractions.csproj" />
+    <ProjectReference Include="..\..\SemanticKernel.Core\SemanticKernel.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+
+</Project>
