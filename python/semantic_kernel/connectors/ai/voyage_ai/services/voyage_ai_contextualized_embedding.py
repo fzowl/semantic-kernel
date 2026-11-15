@@ -78,7 +78,7 @@ class VoyageAIContextualizedEmbedding(VoyageAIBase, EmbeddingGeneratorBase):
         if not ai_model_id:
             from semantic_kernel.connectors.ai.voyage_ai.voyage_ai_settings import VoyageAISettings
 
-            settings = VoyageAISettings(env_file_path=env_file_path)  # type: ignore[call-arg]
+            settings = VoyageAISettings(api_key=api_key, env_file_path=env_file_path)  # type: ignore[arg-type]
             ai_model_id = settings.contextualized_embedding_model_id
 
         if not ai_model_id:
@@ -195,7 +195,7 @@ class VoyageAIContextualizedEmbedding(VoyageAIBase, EmbeddingGeneratorBase):
         settings: "PromptExecutionSettings | None" = None,
         **kwargs: Any,
     ) -> ndarray:
-        """Generate embeddings for texts, each text being one document (or one query in ``query`` mode).
+        """Generate one embedding per text, each text being one document (or one query in ``query`` mode).
 
         Args:
             texts: List of texts to generate embeddings for.
@@ -203,9 +203,19 @@ class VoyageAIContextualizedEmbedding(VoyageAIBase, EmbeddingGeneratorBase):
             kwargs: Additional arguments.
 
         Returns:
-            ndarray: Array of embeddings.
+            ndarray: Array of embeddings, one row per text.
+
+        Raises:
+            ServiceInvalidRequestError: If the API split a document into several chunks. Use
+                ``generate_contextualized_chunk_embeddings`` for such inputs.
         """
-        return await self.generate_contextualized_embeddings(texts, settings, **kwargs)
+        results = await self.generate_contextualized_chunk_embeddings(texts, settings, **kwargs)
+        if any(len(result.embeddings) != 1 for result in results):
+            raise ServiceInvalidRequestError(
+                "generate_embeddings returns one embedding per input, but the API split at least one input "
+                "into several chunks. Use generate_contextualized_chunk_embeddings to get the embeddings per chunk."
+            )
+        return array([result.embeddings[0] for result in results])
 
     @override
     def get_prompt_execution_settings_class(self) -> type["PromptExecutionSettings"]:

@@ -71,7 +71,7 @@ class VoyageAITextEmbedding(VoyageAIBase, EmbeddingGeneratorBase):
         if not ai_model_id:
             from semantic_kernel.connectors.ai.voyage_ai.voyage_ai_settings import VoyageAISettings
 
-            settings = VoyageAISettings(env_file_path=env_file_path)  # type: ignore[call-arg]
+            settings = VoyageAISettings(api_key=api_key, env_file_path=env_file_path)  # type: ignore[arg-type]
             ai_model_id = settings.embedding_model_id
 
         if not ai_model_id:

@@ -63,7 +63,7 @@ class VoyageAIMultimodalEmbedding(VoyageAIBase, EmbeddingGeneratorBase):
         if not ai_model_id:
             from semantic_kernel.connectors.ai.voyage_ai.voyage_ai_settings import VoyageAISettings
 
-            settings = VoyageAISettings(env_file_path=env_file_path)  # type: ignore[call-arg]
+            settings = VoyageAISettings(api_key=api_key, env_file_path=env_file_path)  # type: ignore[arg-type]
             ai_model_id = settings.multimodal_embedding_model_id
 
         if not ai_model_id:
@@ -126,8 +126,9 @@ class VoyageAIMultimodalEmbedding(VoyageAIBase, EmbeddingGeneratorBase):
 
         try:
             # Call Voyage AI multimodal embeddings API
+            # The SDK expects every input to be a list of content items.
             response = await self.aclient.multimodal_embed(
-                inputs=inputs,
+                inputs=[item if isinstance(item, list) else [item] for item in inputs],
                 model=self.ai_model_id,
                 **settings.prepare_settings_dict(),
             )

@@ -120,3 +120,11 @@ async def test_api_failure_is_wrapped(voyage_ai_unit_test_env):
 
     with pytest.raises(ServiceResponseException, match="API error"):
         await service.generate_contextualized_embeddings(["doc"])
+
+
+@pytest.mark.asyncio
+async def test_generate_embeddings_rejects_inputs_split_into_several_chunks(voyage_ai_unit_test_env):
+    service = _service(_result(["a", "b"], [[0.1], [0.2]]), _result(["c"], [[0.3]]))
+
+    with pytest.raises(ServiceInvalidRequestError, match="generate_contextualized_chunk_embeddings"):
+        await service.generate_embeddings(["long document", "short"])

@@ -270,3 +270,12 @@ async def test_failure_in_a_later_batch_is_not_swallowed(voyage_ai_unit_test_env
 
     with pytest.raises(ServiceResponseException, match="rate limited"):
         await service.generate_embeddings(["x"] * 1001)
+
+
+def test_api_key_argument_is_enough_when_the_model_comes_from_the_environment(monkeypatch):
+    monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
+    monkeypatch.setenv("VOYAGE_EMBEDDING_MODEL_ID", "voyage-4")
+
+    service = VoyageAITextEmbedding(api_key="test-api-key", env_file_path="non_existent.env")
+
+    assert service.ai_model_id == "voyage-4"

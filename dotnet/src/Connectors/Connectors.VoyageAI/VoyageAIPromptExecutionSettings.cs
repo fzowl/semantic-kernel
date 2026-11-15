@@ -1,7 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.SemanticKernel.Text;
 
 namespace Microsoft.SemanticKernel.Connectors.VoyageAI;
 
@@ -106,11 +108,10 @@ public sealed class VoyageAIEmbeddingPromptExecutionSettings : PromptExecutionSe
             return settings;
         }
 
-        return new VoyageAIEmbeddingPromptExecutionSettings()
-        {
-            ModelId = executionSettings.ModelId,
-            ServiceId = executionSettings.ServiceId,
-        };
+        // Keep the extension data (input_type, top_k, ...) set on a generic settings object.
+        var json = JsonSerializer.Serialize(executionSettings);
+        return JsonSerializer.Deserialize<VoyageAIEmbeddingPromptExecutionSettings>(json, JsonOptionsCache.ReadPermissive)
+            ?? throw new ArgumentException($"Invalid execution settings, cannot convert to {nameof(VoyageAIEmbeddingPromptExecutionSettings)}", nameof(executionSettings));
     }
 
     #region private
@@ -172,11 +173,10 @@ public sealed class VoyageAIContextualizedEmbeddingPromptExecutionSettings : Pro
             return settings;
         }
 
-        return new VoyageAIContextualizedEmbeddingPromptExecutionSettings()
-        {
-            ModelId = executionSettings.ModelId,
-            ServiceId = executionSettings.ServiceId,
-        };
+        // Keep the extension data (input_type, top_k, ...) set on a generic settings object.
+        var json = JsonSerializer.Serialize(executionSettings);
+        return JsonSerializer.Deserialize<VoyageAIContextualizedEmbeddingPromptExecutionSettings>(json, JsonOptionsCache.ReadPermissive)
+            ?? throw new ArgumentException($"Invalid execution settings, cannot convert to {nameof(VoyageAIContextualizedEmbeddingPromptExecutionSettings)}", nameof(executionSettings));
     }
 
     #region private
@@ -269,11 +269,10 @@ public sealed class VoyageAIMultimodalEmbeddingPromptExecutionSettings : PromptE
             return settings;
         }
 
-        return new VoyageAIMultimodalEmbeddingPromptExecutionSettings()
-        {
-            ModelId = executionSettings.ModelId,
-            ServiceId = executionSettings.ServiceId,
-        };
+        // Keep the extension data (input_type, top_k, ...) set on a generic settings object.
+        var json = JsonSerializer.Serialize(executionSettings);
+        return JsonSerializer.Deserialize<VoyageAIMultimodalEmbeddingPromptExecutionSettings>(json, JsonOptionsCache.ReadPermissive)
+            ?? throw new ArgumentException($"Invalid execution settings, cannot convert to {nameof(VoyageAIMultimodalEmbeddingPromptExecutionSettings)}", nameof(executionSettings));
     }
 
     #region private
@@ -351,11 +350,10 @@ public sealed class VoyageAIRerankPromptExecutionSettings : PromptExecutionSetti
             return settings;
         }
 
-        return new VoyageAIRerankPromptExecutionSettings()
-        {
-            ModelId = executionSettings.ModelId,
-            ServiceId = executionSettings.ServiceId,
-        };
+        // Keep the extension data (input_type, top_k, ...) set on a generic settings object.
+        var json = JsonSerializer.Serialize(executionSettings);
+        return JsonSerializer.Deserialize<VoyageAIRerankPromptExecutionSettings>(json, JsonOptionsCache.ReadPermissive)
+            ?? throw new ArgumentException($"Invalid execution settings, cannot convert to {nameof(VoyageAIRerankPromptExecutionSettings)}", nameof(executionSettings));
     }
 
     #region private

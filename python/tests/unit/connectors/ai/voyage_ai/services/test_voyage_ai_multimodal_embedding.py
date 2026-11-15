@@ -167,3 +167,20 @@ async def test_generate_multimodal_embeddings_failure(voyage_ai_unit_test_env):
 
     with pytest.raises(ServiceResponseException):
         await embedding_service.generate_multimodal_embeddings(inputs)
+
+
+@pytest.mark.asyncio
+async def test_bare_text_inputs_are_wrapped_in_content_lists_for_the_sdk(voyage_ai_unit_test_env):
+    from voyageai.object.multimodal_embeddings import MultimodalInputRequest
+
+    mock_response = MagicMock()
+    mock_response.embeddings = [[0.1], [0.2]]
+    service = VoyageAIMultimodalEmbedding(ai_model_id="voyage-multimodal-3.5", api_key="test-api-key")
+    service._aclient.multimodal_embed = AsyncMock(return_value=mock_response)
+
+    await service.generate_multimodal_embeddings(["a caption", ["interleaved", "content"]])
+
+    sent = service._aclient.multimodal_embed.call_args.kwargs["inputs"]
+    assert sent == [["a caption"], ["interleaved", "content"]]
+    # The real SDK accepts exactly this shape.
+    MultimodalInputRequest.from_user_inputs(sent, "voyage-multimodal-3.5")

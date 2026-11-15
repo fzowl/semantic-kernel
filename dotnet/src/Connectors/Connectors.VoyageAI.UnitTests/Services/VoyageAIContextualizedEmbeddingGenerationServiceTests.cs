@@ -188,6 +188,48 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationServiceTests : IDis
         exception.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact]
+    public async Task GenerateEmbeddingsRejectsInputsSplitIntoSeveralChunksAsync()
+    {
+        // Arrange
+        this.SetResponse([[("chunk a", 0.1f), ("chunk b", 0.2f)], [("chunk c", 0.3f)]]);
+        var service = this.CreateService();
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.GenerateEmbeddingsAsync(["long document", "short"]));
+        exception.Message.Should().Contain("GenerateContextualizedChunkEmbeddingsAsync");
+    }
+
+    [Fact]
+    public async Task GenericExecutionSettingsKeepTheirExtensionDataAsync()
+    {
+        // Arrange
+        this.SetResponse([[(null, 0.1f)]]);
+        var service = this.CreateService();
+        var settings = new PromptExecutionSettings { ExtensionData = new Dictionary<string, object> { ["input_type"] = "query" } };
+
+        // Act
+        await service.GenerateContextualizedEmbeddingsAsync(["q"], settings);
+
+        // Assert
+        using var request = JsonDocument.Parse(this._messageHandlerStub.RequestContent!);
+        request.RootElement.GetProperty("input_type").GetString().Should().Be("query");
+    }
+
+    [Fact]
+    public async Task EndpointWithTrailingSlashDoesNotProduceADoubleSlashAsync()
+    {
+        // Arrange
+        this.SetResponse([[("a", 0.1f)]]);
+        var service = new VoyageAIContextualizedEmbeddingGenerationService("voyage-context-4", "test-api-key", "https://custom.example/v1/", this._httpClient);
+
+        // Act
+        await service.GenerateContextualizedEmbeddingsAsync(["a"]);
+
+        // Assert
+        this._messageHandlerStub.RequestUri!.ToString().Should().Be("https://custom.example/v1/contextualizedembeddings");
+    }
+
     private VoyageAIContextualizedEmbeddingGenerationService CreateService()
         => new(modelId: "voyage-context-4", apiKey: "test-api-key", httpClient: this._httpClient);
 

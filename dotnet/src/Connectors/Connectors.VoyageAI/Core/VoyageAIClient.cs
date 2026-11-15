@@ -49,7 +49,7 @@ internal sealed class VoyageAIClient
         ILogger? logger = null)
     {
         this._apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
-        this._endpoint = endpoint ?? GetDefaultBaseUrl(apiKey);
+        this._endpoint = (endpoint ?? GetDefaultBaseUrl(apiKey)).TrimEnd('/');
         this._httpClient = httpClient ?? new HttpClient();
         this._logger = logger ?? NullLogger.Instance;
     }

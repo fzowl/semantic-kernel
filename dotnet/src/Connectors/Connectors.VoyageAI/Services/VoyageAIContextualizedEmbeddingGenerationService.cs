@@ -167,13 +167,25 @@ public sealed class VoyageAIContextualizedEmbeddingGenerationService : ITextEmbe
     /// <see cref="VoyageAIContextualizedEmbeddingPromptExecutionSettings"/>).</param>
     /// <param name="kernel">The <see cref="Kernel"/> containing services, plugins, and other state.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
-    /// <returns>A list of embeddings, one per chunk.</returns>
-    public Task<IList<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
+    /// <returns>A list of embeddings, one per input.</returns>
+    /// <exception cref="InvalidOperationException">The API split an input into several chunks.</exception>
+    public async Task<IList<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
         IList<string> data,
         PromptExecutionSettings? executionSettings,
         Kernel? kernel = null,
         CancellationToken cancellationToken = default)
-        => this.GenerateContextualizedEmbeddingsAsync(data, executionSettings, kernel, cancellationToken);
+    {
+        var results = await this.GenerateContextualizedChunkEmbeddingsAsync(data, executionSettings, kernel, cancellationToken).ConfigureAwait(false);
+
+        if (results.Any(result => result.Embeddings.Count != 1))
+        {
+            throw new InvalidOperationException(
+                "GenerateEmbeddingsAsync returns one embedding per input, but the API split at least one input into several chunks. " +
+                $"Use {nameof(this.GenerateContextualizedChunkEmbeddingsAsync)} to get the embeddings per chunk.");
+        }
+
+        return results.Select(result => result.Embeddings[0]).ToList();
+    }
 }
 
 /// <summary>
